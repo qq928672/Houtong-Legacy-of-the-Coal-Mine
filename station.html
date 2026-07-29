@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探索站點 | 猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #060402;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    color: #f4e6c8;
+  }
+
+  /* ---------- 共用背景舞台 ---------- */
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center 55%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 5vw;
+  }
+
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    background: #ffcf6b;
+    box-shadow: 0 0 6px 2px #ffcf6b;
+    opacity: 0;
+    animation: rise 7s linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0); opacity: 0; }
+    10%  { opacity: 0.8; }
+    100% { transform: translateY(-30vh); opacity: 0; }
+  }
+
+  .phase { display: none; position: relative; z-index: 2; width: 100%; }
+  .phase.active { display: block; }
+
+  /* ---------- Phase 1：劇情（RPG 對話框） ---------- */
+  #storyPhase { width: 100%; height: 100%; }
+
+  .dialogue-box {
+    position: fixed;
+    left: 50%;
+    bottom: 5vh;
+    transform: translateX(-50%) translateY(16px);
+    width: min(92vw, 720px);
+    display: flex;
+    align-items: stretch;
+    cursor: pointer;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    user-select: none;
+    filter: drop-shadow(0 10px 24px rgba(0,0,0,0.55));
+  }
+  .dialogue-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .portrait-box {
+    position: relative;
+    width: 120px;
+    flex-shrink: 0;
+    background: rgba(10, 8, 5, 0.92);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+  }
+  .portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 15%;
+    display: block;
+  }
+  .portrait-name {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #ffe19a, #ffcf6b);
+    color: #2a1a0a;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #7a4c1c;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .text-box {
+    flex: 1;
+    min-width: 0;
+    background: rgba(10, 8, 5, 0.88);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-radius: 0 10px 10px 0;
+    padding: 1.3rem 1.4rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dialogue-text {
+    min-height: 3.4em;
+    font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+    line-height: 1.75;
+    letter-spacing: 0.04em;
+    color: #f4e6c8;
+    margin: 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .next-indicator {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #ffcf6b;
+    letter-spacing: 0.15em;
+    margin-top: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .next-indicator.show {
+    opacity: 1;
+    animation: bob 1.2s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  /* ---------- Phase 2：測驗 ---------- */
+  #quizPhase {
+    max-width: 560px;
+    margin: 0 auto;
+    background: rgba(15, 11, 6, 0.72);
+    border: 1px solid rgba(217, 185, 122, 0.3);
+    border-radius: 12px;
+    padding: 2.2rem 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+
+  .quiz-progress {
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: #d9b97a;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .quiz-question {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.7;
+    text-align: center;
+    color: #fff3d6;
+    margin: 0 0 1.6rem;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .option {
+    text-align: left;
+    padding: 0.75rem 1.1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(217, 185, 122, 0.35);
+    border-radius: 6px;
+    color: #f4e6c8;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+  .option:hover { background: rgba(255, 207, 107, 0.12); border-color: rgba(255, 207, 107, 0.6); }
+  .option:active { transform: scale(0.99); }
+  .option.correct { background: rgba(94, 189, 108, 0.25); border-color: #5ebd6c; }
+  .option.wrong { background: rgba(214, 80, 80, 0.25); border-color: #d65050; }
+  .option.selected { background: rgba(255, 207, 107, 0.18); border-color: #ffcf6b; }
+
+  .confirm-btn {
+    margin-top: 1.2rem;
+    width: 100%;
+    padding: 0.7rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: #2a1a0a;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 45%, #ff8a3d 100%);
+    border: 1px solid #7a4c1c;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(255, 176, 66, 0.4);
+  }
+  .confirm-btn:hover { box-shadow: 0 0 20px rgba(255, 176, 66, 0.65); }
+
+  .order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.9rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(217, 185, 122, 0.35);
+    border-radius: 6px;
+    color: #f4e6c8;
+    font-size: 0.9rem;
+    cursor: grab;
+  }
+  .order-item.dragging { opacity: 0.4; }
+  .order-item .handle { color: #ffcf6b; font-size: 1rem; flex-shrink: 0; }
+  .order-item .order-text { flex: 1; }
+  .order-item .arrows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .order-item .arrows button {
+    background: rgba(217, 185, 122, 0.15);
+    border: 1px solid rgba(217, 185, 122, 0.4);
+    color: #ffcf6b;
+    font-size: 0.65rem;
+    line-height: 1;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .order-item .arrows button:hover { background: rgba(217, 185, 122, 0.3); }
+  .order-item.flash-wrong { border-color: #d65050; background: rgba(214, 80, 80, 0.18); }
+
+  /* 拖曳配對 */
+  .match-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .match-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .match-left {
+    flex: 0 0 38%;
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(217, 185, 122, 0.3);
+    border-radius: 6px;
+    font-size: 0.88rem;
+    color: #f4e6c8;
+  }
+  .match-slot {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 2.6rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px dashed rgba(217, 185, 122, 0.4);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: rgba(244, 230, 200, 0.4);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .match-slot.filled {
+    border-style: solid;
+    color: #f4e6c8;
+    background: rgba(255, 207, 107, 0.1);
+  }
+  .match-slot.drop-target { border-color: #ffcf6b; background: rgba(255, 207, 107, 0.15); }
+  .match-slot.flash-wrong { border-color: #d65050; background: rgba(214, 80, 80, 0.18); }
+
+  .match-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+  }
+  .match-chip {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(217, 185, 122, 0.35);
+    border-radius: 999px;
+    color: #f4e6c8;
+    font-size: 0.82rem;
+    cursor: grab;
+  }
+  .match-chip.selected { border-color: #ffcf6b; background: rgba(255, 207, 107, 0.2); }
+  .match-chip.dragging { opacity: 0.4; }
+
+  .quiz-feedback {
+    min-height: 1.4rem;
+    text-align: center;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    letter-spacing: 0.08em;
+  }
+  .quiz-feedback.ok { color: #8fe39c; }
+  .quiz-feedback.no { color: #f29a9a; }
+
+  /* ---------- Phase 3：獲得信物 ---------- */
+  #rewardPhase {
+    max-width: 480px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .medal {
+    width: 128px;
+    height: 128px;
+    margin: 0 auto 1.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.4rem;
+    background: radial-gradient(circle at 35% 30%, #ffe9b8, #ffcf6b 55%, #b9781f 100%);
+    box-shadow: 0 0 30px rgba(255, 176, 66, 0.6), inset 0 2px 4px rgba(255,255,255,0.6);
+    animation: pop 0.6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .medal.img-icon {
+    background: none;
+    box-shadow: none;
+    width: 150px;
+    height: 150px;
+  }
+  .medal.img-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55));
+  }
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #rewardPhase h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    color: #fff3d6;
+    text-shadow: 0 0 16px rgba(255, 207, 107, 0.5);
+  }
+  #rewardPhase p {
+    color: #d9c8a3;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin: 0 0 2rem;
+  }
+
+  .reward-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.65rem 1.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn.primary {
+    color: #2a1a0a;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 45%, #ff8a3d 100%);
+    border: 1px solid #7a4c1c;
+    box-shadow: 0 0 18px rgba(255, 176, 66, 0.5);
+  }
+  .btn.secondary {
+    color: #f4e6c8;
+    background: rgba(20, 14, 8, 0.55);
+    border: 1px solid rgba(217, 185, 122, 0.6);
+  }
+
+  /* ---------- 找不到站點 ---------- */
+  #notFound {
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+
+    <!-- 找不到對應站點資料時顯示 -->
+    <div class="phase active" id="notFound" style="display:none;">
+      <h2>找不到這個站點</h2>
+      <p><a class="btn secondary" href="map.html">← 返回地圖</a></p>
+    </div>
+
+    <!-- Phase 1：劇情 -->
+    <div class="phase active" id="storyPhase">
+      <div class="dialogue-box" id="dialogueBox">
+        <div class="portrait-box">
+          <img class="portrait-img" id="portraitImg" alt="">
+          <span class="portrait-name" id="speakerName"></span>
+        </div>
+        <div class="text-box">
+          <p class="dialogue-text" id="dialogueText"></p>
+          <p class="next-indicator" id="nextIndicator"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2：測驗 -->
+    <div class="phase" id="quizPhase">
+      <p class="quiz-progress" id="quizProgress"></p>
+      <p class="quiz-question" id="quizQuestion"></p>
+      <div class="quiz-options" id="quizOptions"></div>
+      <p class="quiz-feedback" id="quizFeedback"></p>
+    </div>
+
+    <!-- Phase 3：獲得信物 -->
+    <div class="phase" id="rewardPhase">
+      <div class="medal" id="rewardMedal"></div>
+      <h2 id="rewardTitle"></h2>
+      <p id="rewardDesc"></p>
+      <div class="reward-actions">
+        <a class="btn primary" href="codex.html">查看圖鑑</a>
+        <a class="btn secondary" href="map.html">返回地圖</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SPEAKER = "礦工貓";
+    const CHARACTER_ART = "角色圖/礦工貓.png";
+
+    // 站點內容（劇情／測驗／信物）統一放在 stations-data.json，
+    // 可以用 editor.html 編輯，不用改這裡的程式碼。
+    const params = new URLSearchParams(location.search);
+    const stationId = params.get('id');
+
+    const stage = document.getElementById('stage');
+    const storyPhase = document.getElementById('storyPhase');
+    const quizPhase = document.getElementById('quizPhase');
+    const rewardPhase = document.getElementById('rewardPhase');
+    const notFound = document.getElementById('notFound');
+
+    fetch('stations-data.json')
+      .then(r => r.json())
+      .then(STATIONS => init(STATIONS[stationId]))
+      .catch(() => {
+        storyPhase.style.display = 'none';
+        quizPhase.style.display = 'none';
+        rewardPhase.style.display = 'none';
+        notFound.style.display = 'block';
+        notFound.querySelector('h2').textContent = '無法載入站點資料';
+        const hint = document.createElement('p');
+        hint.style.color = '#cbb488';
+        hint.style.fontSize = '0.85rem';
+        hint.textContent = '請確認是透過 Live Server（http://）開啟，而不是直接雙擊 html 檔案。';
+        notFound.insertBefore(hint, notFound.querySelector('p'));
+      });
+
+    function init(data) {
+    if (!data) {
+      storyPhase.style.display = 'none';
+      quizPhase.style.display = 'none';
+      rewardPhase.style.display = 'none';
+      notFound.style.display = 'block';
+    } else {
+      document.title = stationId + ' | 猴硐礦坑大冒險';
+      stage.style.backgroundImage =
+        `linear-gradient(to bottom, rgba(6,4,2,0.86) 0%, rgba(6,4,2,0.8) 100%), url("${encodeURI(data.bg)}")`;
+
+      const dialogueBox = document.getElementById('dialogueBox');
+      const portraitImg = document.getElementById('portraitImg');
+      const nameEl = document.getElementById('speakerName');
+      const textEl = document.getElementById('dialogueText');
+      const nextEl = document.getElementById('nextIndicator');
+      const quizProgress = document.getElementById('quizProgress');
+      const quizQuestion = document.getElementById('quizQuestion');
+      const quizOptions = document.getElementById('quizOptions');
+      const quizFeedback = document.getElementById('quizFeedback');
+
+      portraitImg.src = CHARACTER_ART;
+      nameEl.textContent = SPEAKER;
+
+      // 飄浮微光
+      for (let i = 0; i < 16; i++) {
+        const s = document.createElement('div');
+        s.className = 'spark';
+        const size = 2 + Math.random() * 3;
+        s.style.width = size + 'px';
+        s.style.height = size + 'px';
+        s.style.left = (Math.random() * 100) + 'vw';
+        s.style.bottom = (Math.random() * 15) + 'vh';
+        s.style.animationDelay = (Math.random() * 7) + 's';
+        s.style.animationDuration = (5 + Math.random() * 4) + 's';
+        stage.appendChild(s);
+      }
+
+      // ---------- 劇情 + 測驗 交錯播放（beats） ----------
+      const beats = data.beats;
+      const totalQuizBeats = beats.filter(b => b.type === 'quiz').length;
+      let quizSeen = 0;
+      let beatIndex = 0;
+
+      function playBeat(i) {
+        beatIndex = i;
+        if (i >= beats.length) {
+          finishStation();
+          return;
+        }
+        const beat = beats[i];
+        if (beat.type === 'dialogue') {
+          playDialogueBeat(beat);
+        } else {
+          playQuizBeat(beat);
+        }
+      }
+
+      // ---- 對話 beat ----
+      let lineIndex = 0;
+      let charIndex = 0;
+      let typing = false;
+      let typeTimer = null;
+      let currentLines = [];
+
+      function playDialogueBeat(beat) {
+        quizPhase.classList.remove('active');
+        storyPhase.classList.add('active');
+        currentLines = beat.lines;
+        lineIndex = 0;
+        dialogueBox.classList.remove('show');
+        setTimeout(() => {
+          dialogueBox.classList.add('show');
+          showLine(0);
+        }, 300);
+      }
+
+      function showLine(i) {
+        const text = currentLines[i];
+        textEl.textContent = '';
+        nextEl.classList.remove('show');
+        typing = true;
+        charIndex = 0;
+        clearInterval(typeTimer);
+        typeTimer = setInterval(() => {
+          textEl.textContent += text[charIndex];
+          charIndex++;
+          if (charIndex >= text.length) {
+            clearInterval(typeTimer);
+            finishTyping();
+          }
+        }, 38);
+      }
+
+      function finishTyping() {
+        typing = false;
+        nextEl.textContent = '▼';
+        nextEl.classList.add('show');
+      }
+
+      function advanceDialogue() {
+        if (storyPhase.classList.contains('active') === false) return;
+        if (typing) {
+          clearInterval(typeTimer);
+          textEl.textContent = currentLines[lineIndex];
+          finishTyping();
+          return;
+        }
+
+        lineIndex++;
+        if (lineIndex >= currentLines.length) {
+          playBeat(beatIndex + 1);
+          return;
+        }
+        showLine(lineIndex);
+      }
+
+      dialogueBox.addEventListener('click', advanceDialogue);
+
+      // ---- 測驗 beat ----
+      let currentQuiz = null;
+
+      function playQuizBeat(beat) {
+        storyPhase.classList.remove('active');
+        quizPhase.classList.add('active');
+        currentQuiz = beat.quiz;
+        quizSeen++;
+        quizProgress.textContent = `第 ${quizSeen} / ${totalQuizBeats} 題`;
+        quizQuestion.textContent = beat.quiz.q;
+        quizFeedback.textContent = '';
+        quizFeedback.className = 'quiz-feedback';
+        quizOptions.innerHTML = '';
+
+        if (beat.quiz.kind === 'single') {
+          renderSingleQuiz(beat.quiz);
+        } else if (beat.quiz.kind === 'multi') {
+          renderMultiQuiz(beat.quiz);
+        } else if (beat.quiz.kind === 'order') {
+          renderOrderQuiz(beat.quiz);
+        } else if (beat.quiz.kind === 'match') {
+          renderMatchQuiz(beat.quiz);
+        }
+      }
+
+      // 答對後，礦工貓先回應一句，玩家點擊繼續才進到下一個 beat
+      function onQuizPassed() {
+        const reaction = currentQuiz && currentQuiz.correct;
+        setTimeout(() => {
+          if (!reaction) {
+            playBeat(beatIndex + 1);
+            return;
+          }
+          quizPhase.classList.remove('active');
+          storyPhase.classList.add('active');
+          currentLines = [reaction];
+          lineIndex = 0;
+          dialogueBox.classList.remove('show');
+          setTimeout(() => {
+            dialogueBox.classList.add('show');
+            showLine(0);
+          }, 200);
+        }, 700);
+      }
+
+      // 單選
+      function renderSingleQuiz(q) {
+        q.options.forEach((opt, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'option';
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            const allOptions = quizOptions.querySelectorAll('.option');
+            allOptions.forEach(o => o.style.pointerEvents = 'none');
+
+            if (i === q.answer) {
+              btn.classList.add('correct');
+              quizFeedback.textContent = '答對了！';
+              quizFeedback.className = 'quiz-feedback ok';
+              onQuizPassed();
+            } else {
+              btn.classList.add('wrong');
+              quizFeedback.textContent = '再試一次';
+              quizFeedback.className = 'quiz-feedback no';
+              setTimeout(() => {
+                btn.classList.remove('wrong');
+                allOptions.forEach(o => o.style.pointerEvents = 'auto');
+                quizFeedback.textContent = '';
+                quizFeedback.className = 'quiz-feedback';
+              }, 700);
+            }
+          });
+          quizOptions.appendChild(btn);
+        });
+      }
+
+      // 多選
+      function renderMultiQuiz(q) {
+        const selected = new Set();
+
+        q.options.forEach((opt, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'option';
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            if (selected.has(i)) {
+              selected.delete(i);
+              btn.classList.remove('selected');
+            } else {
+              selected.add(i);
+              btn.classList.add('selected');
+            }
+          });
+          quizOptions.appendChild(btn);
+        });
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'confirm-btn';
+        confirmBtn.textContent = '送出答案';
+        confirmBtn.addEventListener('click', () => {
+          const correct = q.answer.length === selected.size &&
+            q.answer.every(a => selected.has(a));
+
+          if (correct) {
+            quizOptions.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
+            confirmBtn.style.pointerEvents = 'none';
+            quizFeedback.textContent = '答對了！';
+            quizFeedback.className = 'quiz-feedback ok';
+            onQuizPassed();
+          } else {
+            quizFeedback.textContent = '再試一次';
+            quizFeedback.className = 'quiz-feedback no';
+            setTimeout(() => {
+              quizFeedback.textContent = '';
+              quizFeedback.className = 'quiz-feedback';
+            }, 700);
+          }
+        });
+        quizOptions.appendChild(confirmBtn);
+      }
+
+      // 拖拉排序
+      function renderOrderQuiz(q) {
+        let order = q.items.map((_, i) => i);
+        // 洗牌，若剛好等於正確順序就反過來
+        for (let i = order.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [order[i], order[j]] = [order[j], order[i]];
+        }
+        if (order.every((v, i) => v === i)) order.reverse();
+
+        let dragFrom = null;
+
+        function render() {
+          quizOptions.innerHTML = '';
+          const list = document.createElement('div');
+          list.className = 'order-list';
+
+          order.forEach((itemIdx, pos) => {
+            const row = document.createElement('div');
+            row.className = 'order-item';
+            row.draggable = true;
+            row.dataset.pos = pos;
+            row.innerHTML = `
+              <span class="handle">⠿</span>
+              <span class="order-text">${q.items[itemIdx]}</span>
+              <span class="arrows">
+                <button type="button" class="up">▲</button>
+                <button type="button" class="down">▼</button>
+              </span>
+            `;
+
+            row.addEventListener('dragstart', () => {
+              dragFrom = pos;
+              row.classList.add('dragging');
+            });
+            row.addEventListener('dragend', () => row.classList.remove('dragging'));
+            row.addEventListener('dragover', (e) => e.preventDefault());
+            row.addEventListener('drop', (e) => {
+              e.preventDefault();
+              if (dragFrom === null || dragFrom === pos) return;
+              const moved = order.splice(dragFrom, 1)[0];
+              order.splice(pos, 0, moved);
+              dragFrom = null;
+              render();
+            });
+
+            row.querySelector('.up').addEventListener('click', () => {
+              if (pos === 0) return;
+              [order[pos - 1], order[pos]] = [order[pos], order[pos - 1]];
+              render();
+            });
+            row.querySelector('.down').addEventListener('click', () => {
+              if (pos === order.length - 1) return;
+              [order[pos + 1], order[pos]] = [order[pos], order[pos + 1]];
+              render();
+            });
+
+            list.appendChild(row);
+          });
+
+          quizOptions.appendChild(list);
+
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'confirm-btn';
+          confirmBtn.textContent = '確認送出';
+          confirmBtn.addEventListener('click', () => {
+            const correct = order.every((v, i) => v === i);
+            if (correct) {
+              quizFeedback.textContent = '答對了！';
+              quizFeedback.className = 'quiz-feedback ok';
+              confirmBtn.style.pointerEvents = 'none';
+              onQuizPassed();
+            } else {
+              quizFeedback.textContent = '順序不對，再試一次';
+              quizFeedback.className = 'quiz-feedback no';
+              list.querySelectorAll('.order-item').forEach(el => el.classList.add('flash-wrong'));
+              setTimeout(() => {
+                list.querySelectorAll('.order-item').forEach(el => el.classList.remove('flash-wrong'));
+                quizFeedback.textContent = '';
+                quizFeedback.className = 'quiz-feedback';
+              }, 700);
+            }
+          });
+          quizOptions.appendChild(confirmBtn);
+        }
+
+        render();
+      }
+
+      // 拖曳配對
+      function renderMatchQuiz(q) {
+        const n = q.pairs.length;
+        let rightOrder = q.pairs.map((_, i) => i);
+        for (let i = rightOrder.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [rightOrder[i], rightOrder[j]] = [rightOrder[j], rightOrder[i]];
+        }
+        if (rightOrder.every((v, i) => v === i)) rightOrder.reverse();
+
+        let assignment = new Array(n).fill(null); // assignment[leftIndex] = pairIndex
+        let selectedChip = null; // 目前選取、準備放入格子的 pairIndex
+        let dragChip = null;
+
+        function placeChip(leftIdx, pairIdx) {
+          // 如果這個 pairIdx 已經放在別的格子，先清掉
+          const prevSlot = assignment.indexOf(pairIdx);
+          if (prevSlot !== -1) assignment[prevSlot] = null;
+          assignment[leftIdx] = pairIdx;
+        }
+
+        function render() {
+          quizOptions.innerHTML = '';
+          const list = document.createElement('div');
+          list.className = 'match-list';
+
+          q.pairs.forEach((pair, leftIdx) => {
+            const row = document.createElement('div');
+            row.className = 'match-row';
+
+            const leftEl = document.createElement('div');
+            leftEl.className = 'match-left';
+            leftEl.textContent = pair.left;
+
+            const assignedIdx = assignment[leftIdx];
+            const slot = document.createElement('div');
+            slot.className = 'match-slot' + (assignedIdx !== null ? ' filled' : '');
+            slot.textContent = assignedIdx !== null ? q.pairs[assignedIdx].right : '點選或拖曳右側選項到這裡';
+
+            slot.addEventListener('click', () => {
+              if (assignedIdx !== null) {
+                assignment[leftIdx] = null;
+                selectedChip = null;
+                render();
+                return;
+              }
+              if (selectedChip !== null) {
+                placeChip(leftIdx, selectedChip);
+                selectedChip = null;
+                render();
+              }
+            });
+            slot.addEventListener('dragover', (e) => e.preventDefault());
+            slot.addEventListener('drop', (e) => {
+              e.preventDefault();
+              if (dragChip === null) return;
+              placeChip(leftIdx, dragChip);
+              dragChip = null;
+              render();
+            });
+
+            row.appendChild(leftEl);
+            row.appendChild(slot);
+            list.appendChild(row);
+          });
+
+          quizOptions.appendChild(list);
+
+          const pool = document.createElement('div');
+          pool.className = 'match-pool';
+          rightOrder.forEach(pairIdx => {
+            if (assignment.includes(pairIdx)) return;
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.draggable = true;
+            chip.className = 'match-chip' + (selectedChip === pairIdx ? ' selected' : '');
+            chip.textContent = q.pairs[pairIdx].right;
+            chip.addEventListener('click', () => {
+              selectedChip = (selectedChip === pairIdx) ? null : pairIdx;
+              render();
+            });
+            chip.addEventListener('dragstart', () => {
+              dragChip = pairIdx;
+              chip.classList.add('dragging');
+            });
+            chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+            pool.appendChild(chip);
+          });
+          quizOptions.appendChild(pool);
+
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'confirm-btn';
+          confirmBtn.textContent = '確認送出';
+          confirmBtn.addEventListener('click', () => {
+            if (assignment.some(v => v === null)) {
+              quizFeedback.textContent = '還有配對沒完成喔';
+              quizFeedback.className = 'quiz-feedback no';
+              setTimeout(() => {
+                quizFeedback.textContent = '';
+                quizFeedback.className = 'quiz-feedback';
+              }, 800);
+              return;
+            }
+            const correct = assignment.every((v, i) => v === i);
+            if (correct) {
+              quizFeedback.textContent = '答對了！';
+              quizFeedback.className = 'quiz-feedback ok';
+              confirmBtn.style.pointerEvents = 'none';
+              onQuizPassed();
+            } else {
+              quizFeedback.textContent = '配對不太對，再試一次';
+              quizFeedback.className = 'quiz-feedback no';
+              list.querySelectorAll('.match-slot').forEach(el => el.classList.add('flash-wrong'));
+              setTimeout(() => {
+                list.querySelectorAll('.match-slot').forEach(el => el.classList.remove('flash-wrong'));
+                quizFeedback.textContent = '';
+                quizFeedback.className = 'quiz-feedback';
+              }, 700);
+            }
+          });
+          quizOptions.appendChild(confirmBtn);
+        }
+
+        render();
+      }
+
+      // ---- 收尾：獲得信物 ----
+      function finishStation() {
+        localStorage.setItem('token_' + stationId, '1');
+        storyPhase.classList.remove('active');
+        quizPhase.classList.remove('active');
+        rewardPhase.classList.add('active');
+
+        const medalEl = document.getElementById('rewardMedal');
+        const icon = data.reward.icon;
+        if (/\.(png|jpe?g|gif|webp|svg|jfif)$/i.test(icon)) {
+          medalEl.classList.add('img-icon');
+          medalEl.innerHTML = `<img src="${encodeURI(icon)}" alt="">`;
+        } else {
+          medalEl.classList.remove('img-icon');
+          medalEl.textContent = icon;
+        }
+        document.getElementById('rewardTitle').textContent = data.reward.title;
+        document.getElementById('rewardDesc').textContent = data.reward.desc;
+      }
+
+      playBeat(0);
+    }
+    }
+  </script>
+</body>
+</html>

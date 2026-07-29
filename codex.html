@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信物圖鑑 | 猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    background: radial-gradient(ellipse at top, #2a2015 0%, #100c07 70%);
+    color: #f4e6c8;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5vh 5vw 8vh;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #d9b97a;
+    text-decoration: none;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(217, 185, 122, 0.5);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+  .back:hover { background: rgba(217, 185, 122, 0.12); }
+
+  header {
+    text-align: center;
+    margin: 3vh 0 5vh;
+  }
+
+  .eyebrow {
+    letter-spacing: 0.5em;
+    font-size: 0.8rem;
+    color: #b98a4a;
+    margin: 0 0 0.6rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    color: #fff3d6;
+    text-shadow: 0 0 16px rgba(255, 207, 107, 0.4);
+  }
+
+  p.hint {
+    color: #cbb488;
+    margin-top: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .progress {
+    max-width: 360px;
+    margin: 2rem auto 0;
+    text-align: center;
+  }
+  .progress .count {
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    color: #d9b97a;
+    margin-bottom: 0.4rem;
+  }
+  .progress .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(217, 185, 122, 0.15);
+    overflow: hidden;
+  }
+  .progress .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffcf6b, #ff8a3d);
+    transition: width 0.4s ease;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
+    margin-top: 3.5vh;
+  }
+
+  .token {
+    position: relative;
+    border-radius: 10px;
+    background: #1b140c;
+    border: 1px solid rgba(217, 185, 122, 0.25);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    padding: 1.8rem 1.2rem 1.4rem;
+    text-align: center;
+  }
+
+  .medal {
+    width: 92px;
+    height: 92px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+  }
+
+  .token.unlocked .medal {
+    background: radial-gradient(circle at 35% 30%, #ffe9b8, #ffcf6b 55%, #b9781f 100%);
+    box-shadow: 0 0 22px rgba(255, 176, 66, 0.55), inset 0 2px 4px rgba(255,255,255,0.6);
+  }
+  .token.unlocked .medal.img-icon {
+    background: none;
+    box-shadow: none;
+    width: 108px;
+    height: 108px;
+  }
+  .medal.img-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
+  }
+
+  .token.locked .medal {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(217, 185, 122, 0.35);
+    color: rgba(244, 230, 200, 0.35);
+  }
+
+  .token .name {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff3d6;
+  }
+  .token.locked .name { color: rgba(244, 230, 200, 0.4); }
+
+  .token .status {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+  }
+  .token.unlocked .status { color: #ffcf6b; }
+  .token.locked .status { color: rgba(217, 185, 122, 0.5); }
+
+  .token .desc {
+    margin: 0.6rem 0 0;
+    font-size: 0.78rem;
+    color: #cbb488;
+    line-height: 1.6;
+  }
+  .token.locked .desc { color: rgba(203, 180, 136, 0.4); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="map.html">← 返回地圖</a>
+
+    <header>
+      <p class="eyebrow">TOKEN COLLECTION</p>
+      <h1>信物圖鑑</h1>
+      <p class="hint">通過站點的測驗，就能獲得屬於該站點的信物</p>
+    </header>
+
+    <div class="progress">
+      <p class="count" id="progressCount">0 / 0 已收集</p>
+      <div class="bar"><div class="bar-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="grid" id="tokenGrid"></div>
+  </div>
+
+  <script>
+    // 各站點的信物設定。之後測驗頁通關時，執行：
+    // localStorage.setItem('token_瑞三本坑礦口', '1')  即可解鎖對應信物
+    const tokens = [
+      {
+        key: "瑞三本坑礦口",
+        name: "礦口信物",
+        icon: "信物/火牌.png",
+        desc: "來自礦工每日出入坑口的記憶"
+      },
+      {
+        key: "瑞三洗煤場博物館",
+        name: "洗煤信物",
+        icon: "信物/洗煤信物.png",
+        desc: "磨損的黃色礦工帽，藏著礦工在煤灰中，日復一日彎腰苦幹的身影"
+      },
+      {
+        key: "運煤橋",
+        name: "運煤信物",
+        icon: "信物/運煤台車.png",
+        desc: "跨越溪谷運送烏金的印記"
+      },
+      {
+        key: "工寮",
+        name: "老式電燈泡",
+        icon: "信物/老式電燈泡.png",
+        desc: "承載著礦工一家下工後，圍坐灶腳吃飯聊天的溫暖時光"
+      }
+    ];
+
+    const grid = document.getElementById('tokenGrid');
+    const progressCount = document.getElementById('progressCount');
+    const progressFill = document.getElementById('progressFill');
+
+    let unlockedCount = 0;
+
+    function isImagePath(s) {
+      return /\.(png|jpe?g|gif|webp|svg|jfif)$/i.test(s);
+    }
+
+    tokens.forEach(t => {
+      const unlocked = localStorage.getItem('token_' + t.key) === '1';
+      if (unlocked) unlockedCount++;
+
+      const medalContent = unlocked
+        ? (isImagePath(t.icon) ? `<img src="${encodeURI(t.icon)}" alt="">` : t.icon)
+        : '🔒';
+      const medalClass = 'medal' + (unlocked && isImagePath(t.icon) ? ' img-icon' : '');
+
+      const card = document.createElement('div');
+      card.className = 'token ' + (unlocked ? 'unlocked' : 'locked');
+      card.innerHTML = `
+        <div class="${medalClass}">${medalContent}</div>
+        <p class="name">${t.name}</p>
+        <p class="status">${unlocked ? '已收藏' : '尚未解鎖'}</p>
+        <p class="desc">${unlocked ? t.desc : '完成「' + t.key + '」的測驗即可獲得'}</p>
+      `;
+      grid.appendChild(card);
+    });
+
+    progressCount.textContent = `${unlockedCount} / ${tokens.length} 已收集`;
+    progressFill.style.width = (tokens.length ? (unlockedCount / tokens.length * 100) : 0) + '%';
+  </script>
+</body>
+</html>

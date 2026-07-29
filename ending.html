@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅程完結 | 猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #060402;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    color: #f4e6c8;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background:
+      linear-gradient(to bottom, rgba(6,4,2,0.7) 0%, rgba(6,4,2,0.5) 45%, rgba(6,4,2,0.88) 100%),
+      url("遊戲入口/礦坑.png");
+    background-size: cover;
+    background-position: center 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 1.4s ease;
+  }
+  .stage.leaving { opacity: 0; }
+
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    background: #ffcf6b;
+    box-shadow: 0 0 6px 2px #ffcf6b;
+    opacity: 0;
+    animation: rise 7s linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0); opacity: 0; }
+    10%  { opacity: 0.8; }
+    100% { transform: translateY(-30vh); opacity: 0; }
+  }
+
+  .phase { display: none; position: relative; z-index: 2; width: 100%; }
+  .phase.active { display: block; }
+
+  /* ---------- 未收集完成 ---------- */
+  #locked {
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  #locked h2 {
+    color: #fff3d6;
+    text-shadow: 0 0 16px rgba(255, 207, 107, 0.4);
+  }
+  #locked p {
+    color: #cbb488;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  /* ---------- RPG 對話框 ---------- */
+  .dialogue-box {
+    position: fixed;
+    left: 50%;
+    bottom: 5vh;
+    transform: translateX(-50%) translateY(16px);
+    width: min(92vw, 720px);
+    display: flex;
+    align-items: stretch;
+    cursor: pointer;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    user-select: none;
+    filter: drop-shadow(0 10px 24px rgba(0,0,0,0.55));
+  }
+  .dialogue-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .portrait-box {
+    position: relative;
+    width: 120px;
+    flex-shrink: 0;
+    background: rgba(10, 8, 5, 0.92);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+  }
+  .portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 15%;
+    display: block;
+  }
+  .portrait-name {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #ffe19a, #ffcf6b);
+    color: #2a1a0a;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #7a4c1c;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .text-box {
+    flex: 1;
+    min-width: 0;
+    background: rgba(10, 8, 5, 0.88);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-radius: 0 10px 10px 0;
+    padding: 1.3rem 1.4rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dialogue-text {
+    min-height: 3.4em;
+    font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+    line-height: 1.75;
+    letter-spacing: 0.04em;
+    color: #f4e6c8;
+    margin: 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .next-indicator {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #ffcf6b;
+    letter-spacing: 0.15em;
+    margin-top: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .next-indicator.show {
+    opacity: 1;
+    animation: bob 1.2s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  /* ---------- 結局畫面 ---------- */
+  #finalePhase {
+    max-width: 620px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .finale-eyebrow {
+    letter-spacing: 0.5em;
+    font-size: 0.8rem;
+    color: #d9b97a;
+    margin: 0 0 0.6rem;
+  }
+  .finale-title {
+    margin: 0 0 0.8rem;
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    font-weight: 900;
+    color: #fff3d6;
+    text-shadow: 0 0 18px rgba(255, 207, 107, 0.55), 0 0 34px rgba(255, 138, 61, 0.35);
+  }
+  .finale-desc {
+    color: #d9c8a3;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    margin: 0 0 2.2rem;
+  }
+
+  .token-row {
+    display: flex;
+    justify-content: center;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.4rem;
+  }
+  .token-item { width: 110px; }
+  .token-medal {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 0.6rem;
+    animation: pop 0.6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .token-medal img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55));
+  }
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .token-item .name {
+    font-size: 0.8rem;
+    color: #ffcf6b;
+    letter-spacing: 0.05em;
+  }
+
+  .finale-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.65rem 1.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+    font-family: inherit;
+  }
+  .btn.primary {
+    color: #2a1a0a;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 45%, #ff8a3d 100%);
+    border: 1px solid #7a4c1c;
+    box-shadow: 0 0 18px rgba(255, 176, 66, 0.5);
+  }
+  .btn.secondary {
+    color: #f4e6c8;
+    background: rgba(20, 14, 8, 0.55);
+    border: 1px solid rgba(217, 185, 122, 0.6);
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+
+    <!-- 尚未收集完三枚信物 -->
+    <div class="phase" id="locked">
+      <h2>旅程尚未完結</h2>
+      <p>你還沒收集完所有信物，先回地圖，把剩下的站點探索完吧。</p>
+      <p><a class="btn secondary" href="map.html">← 返回地圖</a></p>
+    </div>
+
+    <!-- Phase 1：劇情 -->
+    <div class="phase" id="storyPhase">
+      <div class="dialogue-box" id="dialogueBox">
+        <div class="portrait-box">
+          <img class="portrait-img" id="portraitImg" alt="">
+          <span class="portrait-name" id="speakerName"></span>
+        </div>
+        <div class="text-box">
+          <p class="dialogue-text" id="dialogueText"></p>
+          <p class="next-indicator" id="nextIndicator"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2：結局 -->
+    <div class="phase" id="finalePhase">
+      <p class="finale-eyebrow">JOURNEY COMPLETE</p>
+      <h1 class="finale-title">旅程完結</h1>
+      <p class="finale-desc" id="finaleDesc"></p>
+      <div class="token-row" id="tokenRow"></div>
+      <div class="finale-actions">
+        <a class="btn primary" href="codex.html">查看圖鑑</a>
+        <a class="btn secondary" href="map.html">返回地圖</a>
+        <button class="btn secondary" id="restartBtn">重新挑戰</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SPEAKER = "礦工貓";
+    const CHARACTER_ART = "角色圖/礦工貓.png";
+
+    const TOKENS = [
+      { key: "瑞三本坑礦口", name: "礦口信物", icon: "信物/火牌.png" },
+      { key: "瑞三洗煤場博物館", name: "洗煤信物", icon: "信物/洗煤信物.png" },
+      { key: "運煤橋", name: "運煤信物", icon: "信物/運煤台車.png" },
+      { key: "工寮", name: "老式電燈泡", icon: "信物/老式電燈泡.png" }
+    ];
+
+    const allUnlocked = TOKENS.every(t => localStorage.getItem('token_' + t.key) === '1');
+
+    const stage = document.getElementById('stage');
+    const lockedPhase = document.getElementById('locked');
+    const storyPhase = document.getElementById('storyPhase');
+    const finalePhase = document.getElementById('finalePhase');
+
+    if (!allUnlocked) {
+      lockedPhase.classList.add('active');
+    } else {
+      storyPhase.classList.add('active');
+
+      const lines = [
+        "你已經走遍了猴硐礦坑的每一個角落——礦口、洗煤場、運煤橋，還有那間工寮。",
+        "從礦口的火牌、洗煤場的安全帽、運煤橋邊的台車，到工寮裡的信物——每一件，都乘載著一段真實的礦業記憶。",
+        "曾經，這裡日夜運轉、車水馬龍；如今，山谷換上了綠意，貓兒靜靜守護著這段記憶。",
+        "但因為有你願意聽完這些故事，這些記憶，就不會真的被遺忘。",
+        "謝謝你，陪我走完這趟猴硐礦坑的旅程。"
+      ];
+
+      const box = document.getElementById('dialogueBox');
+      const portraitImg = document.getElementById('portraitImg');
+      const nameEl = document.getElementById('speakerName');
+      const textEl = document.getElementById('dialogueText');
+      const nextEl = document.getElementById('nextIndicator');
+
+      portraitImg.src = CHARACTER_ART;
+      nameEl.textContent = SPEAKER;
+
+      let lineIndex = 0;
+      let charIndex = 0;
+      let typing = false;
+      let typeTimer = null;
+
+      function showLine(i) {
+        const text = lines[i];
+        textEl.textContent = '';
+        nextEl.classList.remove('show');
+        typing = true;
+        charIndex = 0;
+        clearInterval(typeTimer);
+        typeTimer = setInterval(() => {
+          textEl.textContent += text[charIndex];
+          charIndex++;
+          if (charIndex >= text.length) {
+            clearInterval(typeTimer);
+            finishTyping(i);
+          }
+        }, 38);
+      }
+
+      function finishTyping(i) {
+        typing = false;
+        nextEl.textContent = (i === lines.length - 1) ? '完結 ▶' : '▼';
+        nextEl.classList.add('show');
+      }
+
+      function advance() {
+        if (typing) {
+          clearInterval(typeTimer);
+          textEl.textContent = lines[lineIndex];
+          finishTyping(lineIndex);
+          return;
+        }
+
+        lineIndex++;
+        if (lineIndex >= lines.length) {
+          showFinale();
+          return;
+        }
+        showLine(lineIndex);
+      }
+
+      function showFinale() {
+        box.removeEventListener('click', advance);
+        storyPhase.classList.remove('active');
+        finalePhase.classList.add('active');
+
+        document.getElementById('finaleDesc').textContent =
+          `你走遍了猴硐礦坑的每一個角落，集齊了${TOKENS.length}枚信物——這段曾經車水馬龍的礦業記憶，因為你的聆聽，得以被好好記住。`;
+
+        const tokenRow = document.getElementById('tokenRow');
+        TOKENS.forEach(t => {
+          const item = document.createElement('div');
+          item.className = 'token-item';
+          item.innerHTML = `
+            <div class="token-medal"><img src="${encodeURI(t.icon)}" alt=""></div>
+            <p class="name">${t.name}</p>
+          `;
+          tokenRow.appendChild(item);
+        });
+      }
+
+      box.addEventListener('click', advance);
+
+      setTimeout(() => {
+        box.classList.add('show');
+        showLine(0);
+      }, 500);
+    }
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      if (!confirm('確定要重新挑戰嗎？這會清除已收集的三枚信物。')) return;
+      TOKENS.forEach(t => localStorage.removeItem('token_' + t.key));
+      window.location.href = 'map.html';
+    });
+
+    // 飄浮微光
+    for (let i = 0; i < 18; i++) {
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const size = 2 + Math.random() * 3;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = (Math.random() * 100) + 'vw';
+      s.style.bottom = (Math.random() * 15) + 'vh';
+      s.style.animationDelay = (Math.random() * 7) + 's';
+      s.style.animationDuration = (5 + Math.random() * 4) + 's';
+      stage.appendChild(s);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>內容編輯器 | 猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    background: radial-gradient(ellipse at top, #2a2015 0%, #100c07 70%);
+    color: #f4e6c8;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 4vh 5vw 8vh;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #d9b97a;
+    text-decoration: none;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(217, 185, 122, 0.5);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+  }
+  .back:hover { background: rgba(217, 185, 122, 0.12); }
+
+  .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  button, select, input, textarea {
+    font-family: inherit;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: 1px solid rgba(217, 185, 122, 0.5);
+    background: rgba(20, 14, 8, 0.55);
+    color: #f4e6c8;
+    cursor: pointer;
+  }
+  .btn:hover { background: rgba(217, 185, 122, 0.15); }
+  .btn.primary {
+    color: #2a1a0a;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 100%);
+    border-color: #7a4c1c;
+    font-weight: 700;
+  }
+  .btn.primary:hover { box-shadow: 0 0 16px rgba(255, 176, 66, 0.5); }
+  .btn.danger { border-color: rgba(214, 80, 80, 0.5); color: #e08a8a; background: rgba(214, 80, 80, 0.08); }
+  .btn.danger:hover { background: rgba(214, 80, 80, 0.2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  h1 {
+    margin: 3vh 0 0.4rem;
+    font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+    color: #fff3d6;
+    text-shadow: 0 0 16px rgba(255, 207, 107, 0.4);
+  }
+  .note {
+    color: #cbb488;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    margin: 0 0 3vh;
+  }
+
+  .status {
+    font-size: 0.8rem;
+    color: #8fe39c;
+    min-height: 1.2rem;
+    margin: 0.6rem 0 1.5rem;
+  }
+  .status.err { color: #f29a9a; }
+
+  .station-card {
+    background: rgba(15, 11, 6, 0.6);
+    border: 1px solid rgba(217, 185, 122, 0.3);
+    border-radius: 10px;
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .station-head {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .station-head input[type=text] {
+    font-size: 1.05rem;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(217, 185, 122, 0.5);
+    color: #fff3d6;
+    padding: 0.2rem 0.1rem;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: #d9b97a;
+    margin: 0.9rem 0 0.3rem;
+  }
+
+  input[type=text], input[type=number], textarea, select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(217, 185, 122, 0.3);
+    border-radius: 6px;
+    color: #f4e6c8;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9rem;
+  }
+  textarea { resize: vertical; min-height: 4.5em; line-height: 1.6; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  .beat {
+    border: 1px solid rgba(217, 185, 122, 0.25);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1rem;
+    background: rgba(255,255,255,0.02);
+  }
+  .beat-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+  }
+  .beat-tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(217, 185, 122, 0.18);
+    color: #ffcf6b;
+  }
+  .beat-tag.quiz { background: rgba(94, 189, 108, 0.2); color: #8fe39c; }
+  .beat-spacer { flex: 1; }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: #d9b97a;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+  }
+  .icon-btn:hover { color: #ffcf6b; }
+  .icon-btn.danger { color: #e08a8a; }
+  .icon-btn.danger:hover { color: #ff8080; }
+
+  .add-row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+
+  hr.sep { border: none; border-top: 1px dashed rgba(217, 185, 122, 0.25); margin: 1.5rem 0; }
+
+  .empty-hint {
+    text-align: center;
+    color: #cbb488;
+    font-size: 0.9rem;
+    padding: 4vh 0;
+  }
+
+  /* ---------- 站點選擇畫面 ---------- */
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.6rem;
+    margin-top: 1rem;
+  }
+  .picker-card {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1b140c;
+    border: 1px solid rgba(217, 185, 122, 0.25);
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .picker-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 207, 107, 0.7);
+  }
+  .picker-thumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #241a10;
+  }
+  .picker-name {
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff3d6;
+  }
+  .picker-beat-count {
+    padding: 0 0.9rem 0.8rem;
+    font-size: 0.75rem;
+    color: #cbb488;
+  }
+  .add-station-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    border: 1px dashed rgba(217, 185, 122, 0.4);
+    border-radius: 10px;
+    color: #d9b97a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .add-station-card:hover { background: rgba(217, 185, 122, 0.08); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-row">
+      <a class="back" href="map.html">← 返回地圖</a>
+      <div class="actions">
+        <button class="btn" id="reloadBtn">↻ 重新載入</button>
+        <button class="btn primary" id="saveBtn">💾 儲存</button>
+      </div>
+    </div>
+
+    <h1 id="pageTitle">內容編輯器</h1>
+    <p class="note" id="pageNote">
+      點選下面的站點，進入該站點專屬的編輯畫面（劇情對話／測驗題目），不會跟其他站點混在一起。
+      地圖卡片的縮圖／簡介（map.html）跟圖鑑的信物說明（codex.html）目前還是各自寫在頁面裡，沒有包含在這裡。
+    </p>
+    <p class="status" id="status"></p>
+
+    <!-- 站點選擇畫面 -->
+    <div id="pickerView">
+      <div class="picker-grid" id="pickerGrid"></div>
+    </div>
+
+    <!-- 單一站點編輯畫面 -->
+    <div id="detailView" style="display:none;">
+      <a class="back" href="#" id="backToPickerBtn">← 返回選擇站點</a>
+      <div id="stationDetail"></div>
+    </div>
+  </div>
+
+  <script>
+    const FILE_NAME = 'stations-data.json';
+    let stationsData = {};
+    let fileHandle = null; // File System Access API 拿到的檔案控制代碼（若瀏覽器支援）
+    let currentKey = null; // 目前正在編輯的站點（picker 畫面時為 null）
+
+    const statusEl = document.getElementById('status');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageNote = document.getElementById('pageNote');
+    const pickerView = document.getElementById('pickerView');
+    const detailView = document.getElementById('detailView');
+    const pickerGrid = document.getElementById('pickerGrid');
+    const stationDetailEl = document.getElementById('stationDetail');
+
+    function setStatus(msg, isErr) {
+      statusEl.textContent = msg;
+      statusEl.className = 'status' + (isErr ? ' err' : '');
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(FILE_NAME + '?t=' + Date.now());
+        stationsData = await res.json();
+        setStatus('已載入 ' + FILE_NAME);
+        const idFromUrl = new URLSearchParams(location.search).get('id');
+        if (idFromUrl && stationsData[idFromUrl]) {
+          showDetail(idFromUrl, true);
+        } else {
+          showPicker(true);
+        }
+      } catch (e) {
+        setStatus('讀取失敗，請確認是用 Live Server（http://）開啟這個頁面。', true);
+      }
+    }
+
+    function showPicker(skipHistory) {
+      currentKey = null;
+      pickerView.style.display = 'block';
+      detailView.style.display = 'none';
+      pageTitle.textContent = '內容編輯器';
+      pageNote.textContent = '點選下面的站點，進入該站點專屬的編輯畫面（劇情對話／測驗題目），不會跟其他站點混在一起。';
+      if (!skipHistory) history.pushState(null, '', 'editor.html');
+      renderPicker();
+    }
+
+    function showDetail(key, skipHistory) {
+      currentKey = key;
+      pickerView.style.display = 'none';
+      detailView.style.display = 'block';
+      pageTitle.textContent = '正在編輯：' + key;
+      pageNote.textContent = '這裡只會顯示「' + key + '」這個站點的內容，不會動到其他站點。';
+      if (!skipHistory) history.pushState(null, '', 'editor.html?id=' + encodeURIComponent(key));
+      renderDetail(key);
+    }
+
+    window.addEventListener('popstate', () => {
+      const idFromUrl = new URLSearchParams(location.search).get('id');
+      if (idFromUrl && stationsData[idFromUrl]) {
+        showDetail(idFromUrl, true);
+      } else {
+        showPicker(true);
+      }
+    });
+
+    function renderPicker() {
+      pickerGrid.innerHTML = '';
+      const keys = Object.keys(stationsData);
+
+      keys.forEach(key => {
+        const st = stationsData[key];
+        const card = document.createElement('button');
+        card.className = 'picker-card';
+        card.innerHTML = `
+          <div class="picker-thumb" style="${st.bg ? `background-image:url('${encodeURI(st.bg)}')` : ''}"></div>
+          <p class="picker-name">${escapeAttr(key)}</p>
+          <p class="picker-beat-count">${(st.beats || []).length} 個內容片段</p>
+        `;
+        card.addEventListener('click', () => showDetail(key));
+        pickerGrid.appendChild(card);
+      });
+
+      const addCard = document.createElement('div');
+      addCard.className = 'add-station-card';
+      addCard.textContent = '+ 新增站點';
+      addCard.addEventListener('click', () => {
+        const name = prompt('新站點的名稱（會用來當作網址 id 跟 localStorage 的 key，建議跟地圖上的站點名稱一致）：');
+        if (!name) return;
+        const key = name.trim();
+        if (!key) return;
+        if (stationsData[key]) { alert('已經有同名的站點了'); return; }
+        stationsData[key] = {
+          bg: '',
+          beats: [],
+          reward: { icon: '⛏', title: '', desc: '' }
+        };
+        showDetail(key);
+      });
+      pickerGrid.appendChild(addCard);
+    }
+
+    function renderDetail(key) {
+      stationDetailEl.innerHTML = '';
+      stationDetailEl.appendChild(renderStation(key));
+    }
+
+    function renderStation(key) {
+      const st = stationsData[key];
+      const card = document.createElement('div');
+      card.className = 'station-card';
+
+      const head = document.createElement('div');
+      head.className = 'station-head';
+      head.innerHTML = `
+        <input type="text" class="station-name" value="${escapeAttr(key)}">
+        <button class="btn danger" data-action="delete-station">刪除此站點</button>
+      `;
+      card.appendChild(head);
+
+      head.querySelector('.station-name').addEventListener('change', (e) => {
+        const newKey = e.target.value.trim();
+        if (!newKey || newKey === key) { e.target.value = key; return; }
+        if (stationsData[newKey]) { alert('已經有同名的站點了'); e.target.value = key; return; }
+        const reordered = {};
+        Object.keys(stationsData).forEach(k => {
+          reordered[k === key ? newKey : k] = stationsData[k];
+        });
+        stationsData = reordered;
+        showDetail(newKey);
+      });
+
+      head.querySelector('[data-action=delete-station]').addEventListener('click', () => {
+        if (!confirm(`確定要刪除站點「${key}」嗎？`)) return;
+        delete stationsData[key];
+        showPicker();
+      });
+
+      // 背景圖
+      const bgLabel = document.createElement('label');
+      bgLabel.textContent = '背景圖片路徑';
+      const bgInput = document.createElement('input');
+      bgInput.type = 'text';
+      bgInput.value = st.bg || '';
+      bgInput.addEventListener('input', () => st.bg = bgInput.value);
+      card.appendChild(bgLabel);
+      card.appendChild(bgInput);
+
+      // 信物
+      const rewardLabel = document.createElement('label');
+      rewardLabel.textContent = '過關獎勵（信物）';
+      card.appendChild(rewardLabel);
+      const rewardRow = document.createElement('div');
+      rewardRow.className = 'row3';
+      st.reward = st.reward || { icon: '⛏', title: '', desc: '' };
+      rewardRow.innerHTML = `
+        <div><input type="text" data-f="icon" placeholder="圖示：emoji 或圖片路徑，例如 信物/火牌.png" value="${escapeAttr(st.reward.icon || '')}"></div>
+        <div><input type="text" data-f="title" placeholder="標題，例如：獲得「礦口信物」" value="${escapeAttr(st.reward.title || '')}"></div>
+        <div><input type="text" data-f="desc" placeholder="說明文字" value="${escapeAttr(st.reward.desc || '')}"></div>
+      `;
+      rewardRow.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', () => st.reward[inp.dataset.f] = inp.value);
+      });
+      card.appendChild(rewardRow);
+
+      card.appendChild(document.createElement('hr')).className = 'sep';
+
+      // Beats
+      const beatsWrap = document.createElement('div');
+      st.beats = st.beats || [];
+      st.beats.forEach((beat, i) => beatsWrap.appendChild(renderBeat(st, i)));
+      card.appendChild(beatsWrap);
+
+      // 新增 beat 按鈕
+      const addRow = document.createElement('div');
+      addRow.className = 'add-row';
+      addRow.innerHTML = `
+        <button class="btn" data-add="dialogue">+ 新增劇情對話</button>
+        <button class="btn" data-add="quiz">+ 新增測驗題目</button>
+      `;
+      addRow.querySelector('[data-add=dialogue]').addEventListener('click', () => {
+        st.beats.push({ type: 'dialogue', lines: ['新的一句台詞'] });
+        renderDetail(currentKey);
+      });
+      addRow.querySelector('[data-add=quiz]').addEventListener('click', () => {
+        st.beats.push({
+          type: 'quiz',
+          quiz: { kind: 'single', q: '新的問題？', options: ['選項1', '選項2', '選項3', '選項4'], answer: 0, correct: '' }
+        });
+        renderDetail(currentKey);
+      });
+      card.appendChild(addRow);
+
+      return card;
+    }
+
+    function renderBeat(st, i) {
+      const beat = st.beats[i];
+      const box = document.createElement('div');
+      box.className = 'beat';
+
+      const head = document.createElement('div');
+      head.className = 'beat-head';
+      head.innerHTML = `
+        <span class="beat-tag ${beat.type === 'quiz' ? 'quiz' : ''}">${beat.type === 'quiz' ? '測驗' : '劇情'} #${i + 1}</span>
+        <span class="beat-spacer"></span>
+        <button class="icon-btn" data-act="up" title="上移">▲</button>
+        <button class="icon-btn" data-act="down" title="下移">▼</button>
+        <button class="icon-btn danger" data-act="del" title="刪除">✕ 刪除</button>
+      `;
+      head.querySelector('[data-act=up]').addEventListener('click', () => {
+        if (i === 0) return;
+        [st.beats[i - 1], st.beats[i]] = [st.beats[i], st.beats[i - 1]];
+        renderDetail(currentKey);
+      });
+      head.querySelector('[data-act=down]').addEventListener('click', () => {
+        if (i === st.beats.length - 1) return;
+        [st.beats[i + 1], st.beats[i]] = [st.beats[i], st.beats[i + 1]];
+        renderDetail(currentKey);
+      });
+      head.querySelector('[data-act=del]').addEventListener('click', () => {
+        st.beats.splice(i, 1);
+        renderDetail(currentKey);
+      });
+      box.appendChild(head);
+
+      if (beat.type === 'dialogue') {
+        const label = document.createElement('label');
+        label.textContent = '對話內容（每行一句，會依序打字顯示）';
+        const ta = document.createElement('textarea');
+        ta.value = (beat.lines || []).join('\n');
+        ta.addEventListener('input', () => {
+          beat.lines = ta.value.split('\n').map(s => s).filter(s => s.trim() !== '');
+        });
+        box.appendChild(label);
+        box.appendChild(ta);
+      } else {
+        const q = beat.quiz;
+
+        const kindLabel = document.createElement('label');
+        kindLabel.textContent = '題型';
+        const kindSelect = document.createElement('select');
+        kindSelect.innerHTML = `
+          <option value="single">單選</option>
+          <option value="multi">多選</option>
+          <option value="order">拖拉排序</option>
+          <option value="match">拖曳配對</option>
+        `;
+        kindSelect.value = q.kind;
+        kindSelect.addEventListener('change', () => {
+          q.kind = kindSelect.value;
+          renderDetail(currentKey);
+        });
+        box.appendChild(kindLabel);
+        box.appendChild(kindSelect);
+
+        const qLabel = document.createElement('label');
+        qLabel.textContent = '題目';
+        const qInput = document.createElement('input');
+        qInput.type = 'text';
+        qInput.value = q.q || '';
+        qInput.addEventListener('input', () => q.q = qInput.value);
+        box.appendChild(qLabel);
+        box.appendChild(qInput);
+
+        if (q.kind === 'order') {
+          const itemsLabel = document.createElement('label');
+          itemsLabel.textContent = '正確順序（每行一項，由上到下就是正確答案）';
+          const itemsTa = document.createElement('textarea');
+          itemsTa.value = (q.items || []).join('\n');
+          itemsTa.addEventListener('input', () => {
+            q.items = itemsTa.value.split('\n').filter(s => s.trim() !== '');
+          });
+          box.appendChild(itemsLabel);
+          box.appendChild(itemsTa);
+        } else if (q.kind === 'match') {
+          const pairsLabel = document.createElement('label');
+          pairsLabel.textContent = '配對項目（每行一組，格式：左邊 | 右邊，例如：白色礦工帽 | 礦場管理人員）';
+          const pairsTa = document.createElement('textarea');
+          pairsTa.value = (q.pairs || []).map(p => `${p.left} | ${p.right}`).join('\n');
+          pairsTa.addEventListener('input', () => {
+            q.pairs = pairsTa.value.split('\n')
+              .filter(line => line.trim() !== '')
+              .map(line => {
+                const idx = line.indexOf('|');
+                if (idx === -1) return { left: line.trim(), right: '' };
+                return { left: line.slice(0, idx).trim(), right: line.slice(idx + 1).trim() };
+              });
+          });
+          box.appendChild(pairsLabel);
+          box.appendChild(pairsTa);
+        } else {
+          const optLabel = document.createElement('label');
+          optLabel.textContent = '選項（每行一個）';
+          const optTa = document.createElement('textarea');
+          optTa.value = (q.options || []).join('\n');
+          optTa.addEventListener('input', () => {
+            q.options = optTa.value.split('\n').filter(s => s.trim() !== '');
+          });
+          box.appendChild(optLabel);
+          box.appendChild(optTa);
+
+          const ansLabel = document.createElement('label');
+          ansLabel.textContent = q.kind === 'multi'
+            ? '正確答案（填選項編號，從 1 開始，多個用逗號分隔，例如 1,2,3）'
+            : '正確答案（填選項編號，從 1 開始）';
+          const ansInput = document.createElement('input');
+          ansInput.type = 'text';
+          if (q.kind === 'multi') {
+            ansInput.value = (q.answer || []).map(n => n + 1).join(',');
+            ansInput.addEventListener('input', () => {
+              q.answer = ansInput.value.split(',').map(s => parseInt(s.trim(), 10) - 1).filter(n => !isNaN(n));
+            });
+          } else {
+            ansInput.value = (typeof q.answer === 'number') ? q.answer + 1 : 1;
+            ansInput.addEventListener('input', () => {
+              const n = parseInt(ansInput.value, 10) - 1;
+              q.answer = isNaN(n) ? 0 : n;
+            });
+          }
+          box.appendChild(ansLabel);
+          box.appendChild(ansInput);
+        }
+
+        const correctLabel = document.createElement('label');
+        correctLabel.textContent = '答對後，礦工貓的回應台詞（選填）';
+        const correctInput = document.createElement('input');
+        correctInput.type = 'text';
+        correctInput.value = q.correct || '';
+        correctInput.addEventListener('input', () => q.correct = correctInput.value);
+        box.appendChild(correctLabel);
+        box.appendChild(correctInput);
+      }
+
+      return box;
+    }
+
+    function escapeAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    // ---------- 存檔 ----------
+    async function saveData() {
+      const json = JSON.stringify(stationsData, null, 2);
+
+      if (window.showSaveFilePicker) {
+        try {
+          if (!fileHandle) {
+            fileHandle = await window.showSaveFilePicker({
+              suggestedName: FILE_NAME,
+              types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+            });
+          }
+          const writable = await fileHandle.createWritable();
+          await writable.write(json);
+          await writable.close();
+          setStatus('已儲存到 ' + FILE_NAME + '（' + new Date().toLocaleTimeString() + '）');
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') { setStatus('已取消儲存'); return; }
+          setStatus('儲存失敗，改用下載方式：' + e.message, true);
+        }
+      }
+
+      // 不支援 File System Access API 時，改成下載檔案，手動覆蓋回專案資料夾
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = FILE_NAME;
+      a.click();
+      setStatus('已下載 ' + FILE_NAME + '，請手動覆蓋到專案資料夾裡的同名檔案。');
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', saveData);
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+      if (!confirm('重新載入會捨棄目前尚未儲存的修改，確定嗎？')) return;
+      fileHandle = null;
+      loadData();
+    });
+    document.getElementById('backToPickerBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      showPicker();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>

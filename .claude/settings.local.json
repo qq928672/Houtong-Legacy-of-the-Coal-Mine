@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"背景圖/瑞三本坑礦口.jfif\" \"/c/Users/qq928/AppData/Local/Temp/claude/C--Users-qq928-Desktop-----/65f683db-11b5-43eb-b189-5ee953d04819/scratchpad/p1.jpg\")",
+      "Bash(cp \"背景圖/瑞三洗煤場博物館.jfif\" \"/c/Users/qq928/AppData/Local/Temp/claude/C--Users-qq928-Desktop-----/65f683db-11b5-43eb-b189-5ee953d04819/scratchpad/p2.jpg\")",
+      "Bash(cp \"背景圖/運煤橋.jfif\" \"/c/Users/qq928/AppData/Local/Temp/claude/C--Users-qq928-Desktop-----/65f683db-11b5-43eb-b189-5ee953d04819/scratchpad/p3.jpg\")",
+      "Bash(cp \"遊戲地標/瑞三鑛業整煤廠.jfif\" \"/c/Users/qq928/AppData/Local/Temp/claude/C--Users-qq928-Desktop-----/65f683db-11b5-43eb-b189-5ee953d04819/scratchpad/p4.jpg\")",
+      "Bash(where code *)",
+      "Bash(code --version)",
+      "Bash(code \"/c/Users/qq928/Desktop/侯硐礦坑\")",
+      "Bash(code --list-extensions)",
+      "Bash(code --install-extension ritwickdey.LiveServer)",
+      "Bash(pkill -f \"http.server 8792\")",
+      "Bash(pkill -f \"http.server 8793\")",
+      "Bash(cp \"/c/Users/qq928/Desktop/猴硐礦坑/遊戲入口/礦坑.png\" \"/c/Users/qq928/AppData/Local/Temp/claude/C--Users-qq928-Desktop-----/019295ae-952d-42bc-85fe-b8a6269af7fd/scratchpad/kuangkeng_preview.png\")",
+      "Bash(pkill -f \"http.server 8794\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/c/Users/qq928/Desktop/猴硐礦坑/stations-data.json', encoding='utf-8'\\)\\)\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('stations-data.json', encoding='utf-8'\\)\\)\")",
+      "Bash(pkill -f \"http.server 8802\")"
+    ]
+  }
+}

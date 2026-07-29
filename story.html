@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #060402;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background:
+      linear-gradient(to bottom, rgba(6,4,2,0.7) 0%, rgba(6,4,2,0.5) 45%, rgba(6,4,2,0.88) 100%),
+      url("遊戲入口/礦坑.png");
+    background-size: cover;
+    background-position: center 40%;
+    opacity: 1;
+    transition: opacity 1.4s ease;
+  }
+  .stage.leaving { opacity: 0; }
+
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    background: #ffcf6b;
+    box-shadow: 0 0 6px 2px #ffcf6b;
+    opacity: 0;
+    animation: rise 7s linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0); opacity: 0; }
+    10%  { opacity: 0.8; }
+    100% { transform: translateY(-30vh); opacity: 0; }
+  }
+
+  /* ---------- RPG 對話框（頭像框 + 文字框） ---------- */
+  .dialogue-box {
+    position: fixed;
+    left: 50%;
+    bottom: 5vh;
+    transform: translateX(-50%) translateY(16px);
+    width: min(92vw, 720px);
+    display: flex;
+    align-items: stretch;
+    cursor: pointer;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    user-select: none;
+    filter: drop-shadow(0 10px 24px rgba(0,0,0,0.55));
+  }
+  .dialogue-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .portrait-box {
+    position: relative;
+    width: 120px;
+    flex-shrink: 0;
+    background: rgba(10, 8, 5, 0.92);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+  }
+  .portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 15%;
+    display: block;
+  }
+  .portrait-name {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #ffe19a, #ffcf6b);
+    color: #2a1a0a;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #7a4c1c;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .text-box {
+    flex: 1;
+    min-width: 0;
+    background: rgba(10, 8, 5, 0.88);
+    border: 2px solid rgba(217, 185, 122, 0.6);
+    border-radius: 0 10px 10px 0;
+    padding: 1.3rem 1.4rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dialogue-text {
+    min-height: 3.4em;
+    font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+    line-height: 1.75;
+    letter-spacing: 0.04em;
+    color: #f4e6c8;
+    margin: 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .next-indicator {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #ffcf6b;
+    letter-spacing: 0.15em;
+    margin-top: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .next-indicator.show {
+    opacity: 1;
+    animation: bob 1.2s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage"></div>
+
+  <div class="dialogue-box" id="dialogueBox">
+    <div class="portrait-box">
+      <img class="portrait-img" id="portraitImg" alt="">
+      <span class="portrait-name" id="speakerName"></span>
+    </div>
+    <div class="text-box">
+      <p class="dialogue-text" id="dialogueText"></p>
+      <p class="next-indicator" id="nextIndicator"></p>
+    </div>
+  </div>
+
+  <script>
+    const SPEAKER = "礦工貓";
+    const CHARACTER_ART = "角色圖/礦工貓.png";
+
+    const lines = [
+      "嗨，歡迎來到猴硐——西元1920年代，這裡曾是全台最大的煤礦區之一。",
+      "瑞三礦業日夜運轉，坑道深處回盪著礦工的呼吸與汗水。",
+      "煤車輾過鐵軌，運煤橋日復一日承載著烏金的重量。",
+      "隨著礦業沒落，坑口沉寂，但故事並未真正結束。",
+      "我們這些守護礦坑的貓，依然在坑道間巡邏。",
+      "戴著微光頭燈，指引著願意聆聽歷史的旅人。",
+      "現在，換你戴上頭燈，跟著我的腳步——",
+      "一起走進猴硐，尋回被遺忘的記憶吧！"
+    ];
+
+    const stage = document.getElementById('stage');
+    const box = document.getElementById('dialogueBox');
+    const portraitImg = document.getElementById('portraitImg');
+    const nameEl = document.getElementById('speakerName');
+    const textEl = document.getElementById('dialogueText');
+    const nextEl = document.getElementById('nextIndicator');
+
+    portraitImg.src = CHARACTER_ART;
+    nameEl.textContent = SPEAKER;
+
+    let lineIndex = 0;
+    let charIndex = 0;
+    let typing = false;
+    let typeTimer = null;
+
+    function showLine(i) {
+      const text = lines[i];
+      textEl.textContent = '';
+      nextEl.classList.remove('show');
+      typing = true;
+      charIndex = 0;
+      clearInterval(typeTimer);
+      typeTimer = setInterval(() => {
+        textEl.textContent += text[charIndex];
+        charIndex++;
+        if (charIndex >= text.length) {
+          clearInterval(typeTimer);
+          finishTyping(i);
+        }
+      }, 38);
+    }
+
+    function finishTyping(i) {
+      typing = false;
+      nextEl.textContent = (i === lines.length - 1) ? '進入礦坑 ▶' : '▼';
+      nextEl.classList.add('show');
+    }
+
+    function advance() {
+      if (typing) {
+        clearInterval(typeTimer);
+        textEl.textContent = lines[lineIndex];
+        finishTyping(lineIndex);
+        return;
+      }
+
+      lineIndex++;
+      if (lineIndex >= lines.length) {
+        endDialogue();
+        return;
+      }
+      showLine(lineIndex);
+    }
+
+    function endDialogue() {
+      box.removeEventListener('click', advance);
+      box.classList.remove('show');
+      stage.classList.add('leaving');
+      setTimeout(() => {
+        window.location.href = 'map.html';
+      }, 1400);
+    }
+
+    box.addEventListener('click', advance);
+
+    setTimeout(() => {
+      box.classList.add('show');
+      showLine(0);
+    }, 500);
+
+    // 飄浮微光
+    for (let i = 0; i < 18; i++) {
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const size = 2 + Math.random() * 3;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = (Math.random() * 100) + 'vw';
+      s.style.bottom = (Math.random() * 15) + 'vh';
+      s.style.animationDelay = (Math.random() * 7) + 's';
+      s.style.animationDuration = (5 + Math.random() * 4) + 's';
+      stage.appendChild(s);
+    }
+  </script>
+</body>
+</html>

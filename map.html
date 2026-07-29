@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>選擇探索站點 | 猴硐礦坑大冒險</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    background:
+      radial-gradient(ellipse at top, #2a2015 0%, #100c07 70%);
+    color: #f4e6c8;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5vh 5vw 8vh;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #d9b97a;
+    text-decoration: none;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(217, 185, 122, 0.5);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+  .back:hover { background: rgba(217, 185, 122, 0.12); }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .codex {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #2a1a0a;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 100%);
+    border: 1px solid #7a4c1c;
+    padding: 0.4rem 1.1rem;
+    border-radius: 4px;
+    box-shadow: 0 0 14px rgba(255, 176, 66, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .codex:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(255, 176, 66, 0.65);
+  }
+
+  .right-group {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #e08a8a;
+    background: rgba(214, 80, 80, 0.08);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(214, 80, 80, 0.4);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .reset-btn:hover { background: rgba(214, 80, 80, 0.2); }
+
+  header {
+    text-align: center;
+    margin: 3vh 0 5vh;
+  }
+
+  .eyebrow {
+    letter-spacing: 0.5em;
+    font-size: 0.8rem;
+    color: #b98a4a;
+    margin: 0 0 0.6rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    color: #fff3d6;
+    text-shadow: 0 0 16px rgba(255, 207, 107, 0.4);
+  }
+
+  p.hint {
+    color: #cbb488;
+    margin-top: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 2.2rem;
+  }
+
+  .station {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1b140c;
+    border: 1px solid rgba(217, 185, 122, 0.25);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    padding: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .station:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 207, 107, 0.7);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.65), 0 0 24px rgba(255, 176, 66, 0.25);
+  }
+
+  .station .thumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+  .station .thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.1) 55%, rgba(10,8,5,0) 100%);
+  }
+
+  /* 未攻略：圖片蓋上一層煤灰 */
+  .station .thumb.locked {
+    filter: grayscale(1) brightness(0.4) contrast(1.05);
+  }
+  .station .soot {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      radial-gradient(circle at 22% 28%, rgba(0,0,0,0.6) 0%, transparent 42%),
+      radial-gradient(circle at 72% 55%, rgba(0,0,0,0.55) 0%, transparent 46%),
+      radial-gradient(circle at 40% 82%, rgba(0,0,0,0.6) 0%, transparent 48%),
+      radial-gradient(circle at 85% 15%, rgba(0,0,0,0.5) 0%, transparent 40%),
+      rgba(12, 9, 6, 0.55);
+    mix-blend-mode: multiply;
+  }
+  .lock-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    color: rgba(244, 230, 200, 0.75);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  }
+
+  .badge {
+    position: absolute;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 2;
+    background: rgba(10, 8, 5, 0.7);
+    border: 1px solid rgba(217, 185, 122, 0.5);
+    color: #ffcf6b;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .station .info {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    padding: 1rem 1.1rem 1.1rem;
+  }
+
+  .station .name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff3d6;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+
+  .station .desc {
+    margin: 0.3rem 0 0;
+    font-size: 0.8rem;
+    color: #d9c8a3;
+  }
+
+  .station .go {
+    position: absolute;
+    right: 1rem;
+    bottom: 1.1rem;
+    z-index: 2;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: #2a1a0a;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 100%);
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  /* 只有真的支援 hover 的裝置（滑鼠）才用淡入效果；
+     觸控裝置沒有可靠的 hover，直接常駐顯示，避免看不到「前往」按鈕 */
+  @media (hover: hover) {
+    .station .go {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+    .station:hover .go {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .finale-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 3vh;
+    padding: 1.1rem 1.5rem;
+    background: linear-gradient(135deg, rgba(255, 207, 107, 0.16), rgba(255, 138, 61, 0.08));
+    border: 1px solid rgba(255, 207, 107, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 24px rgba(255, 176, 66, 0.25);
+  }
+  .finale-banner.show { display: flex; }
+  .finale-banner p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #fff3d6;
+  }
+  .finale-banner .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #2a1a0a;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    background: linear-gradient(180deg, #ffe19a 0%, #ffcf6b 100%);
+    border: 1px solid #7a4c1c;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    box-shadow: 0 0 14px rgba(255, 176, 66, 0.4);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-row">
+      <a class="back" href="index.html">← 返回入口</a>
+      <div class="right-group">
+        <button class="reset-btn" id="resetBtn">重置進度</button>
+        <a class="codex" href="codex.html">圖鑑</a>
+      </div>
+    </div>
+
+    <header>
+      <p class="eyebrow">SELECT A STATION</p>
+      <h1>選擇探索站點</h1>
+      <p class="hint">依序或自由造訪礦坑周邊的歷史站點，深入了解猴硐礦業的過去</p>
+    </header>
+
+    <div class="finale-banner" id="finaleBanner">
+      <p id="finaleBannerText"></p>
+      <a class="btn" href="ending.html">查看結局 →</a>
+    </div>
+
+    <div class="grid" id="stationGrid"></div>
+  </div>
+
+  <script>
+    const stations = [
+      {
+        name: "瑞三本坑礦口",
+        desc: "當年礦工每日出入的坑口",
+        img: "背景圖/瑞三本坑礦口.jfif",
+        href: "station.html?id=" + encodeURIComponent("瑞三本坑礦口")
+      },
+      {
+        name: "瑞三洗煤場博物館",
+        desc: "煤炭篩選與洗選的歷史現場",
+        img: "背景圖/瑞三洗煤場博物館.png",
+        href: "station.html?id=" + encodeURIComponent("瑞三洗煤場博物館")
+      },
+      {
+        name: "運煤橋",
+        desc: "跨越溪谷、運送煤礦的橋樑",
+        img: "背景圖/運煤橋.jfif",
+        href: "station.html?id=" + encodeURIComponent("運煤橋")
+      },
+      {
+        name: "工寮",
+        desc: "礦工下工後，一家人生活起居的地方",
+        img: "背景圖/美援厝工寮.png",
+        href: "station.html?id=" + encodeURIComponent("工寮")
+      },
+    ];
+
+    const grid = document.getElementById('stationGrid');
+
+    const allUnlocked = stations.every(s => localStorage.getItem('token_' + s.name) === '1');
+    if (allUnlocked) {
+      document.getElementById('finaleBannerText').textContent =
+        `🎉 你已經收集齊${stations.length}枚信物，猴硐礦坑的旅程即將完結。`;
+      document.getElementById('finaleBanner').classList.add('show');
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (!confirm('確定要重置所有站點的探索進度嗎？已收集的信物也會被清除，方便你重新測試關卡內容。')) return;
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('token_'))
+        .forEach(k => localStorage.removeItem(k));
+      location.reload();
+    });
+
+    stations.forEach((s, i) => {
+      const unlocked = localStorage.getItem('token_' + s.name) === '1';
+
+      const card = document.createElement('button');
+      card.className = 'station';
+      card.innerHTML = `
+        <span class="badge">站點 ${String(i + 1).padStart(2, '0')}</span>
+        <div class="thumb${unlocked ? '' : ' locked'}" style="background-image:url('${encodeURI(s.img)}')">
+          ${unlocked ? '' : '<div class="soot"></div><span class="lock-icon">🔒</span>'}
+        </div>
+        <div class="info">
+          <p class="name">${s.name}</p>
+          <p class="desc">${unlocked ? s.desc : '完成測驗即可解鎖此地標'}</p>
+        </div>
+        <span class="go">${unlocked ? '已探索 ✓' : '前往 →'}</span>
+      `;
+      card.addEventListener('click', () => {
+        if (unlocked) {
+          alert(`「${s.name}」已經探索完畢！`);
+          return;
+        }
+        if (s.href === '#') {
+          alert(`「${s.name}」站點內容準備中，之後會連結到對應的探索頁面。`);
+        } else {
+          window.location.href = s.href;
+        }
+      });
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
