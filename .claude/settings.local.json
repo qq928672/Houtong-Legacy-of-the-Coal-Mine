@@ -16,7 +16,8 @@
       "Bash(pkill -f \"http.server 8794\")",
       "Bash(python3 -c \"import json; json.load\\(open\\('/c/Users/qq928/Desktop/猴硐礦坑/stations-data.json', encoding='utf-8'\\)\\)\")",
       "Bash(python3 -c \"import json; json.load\\(open\\('stations-data.json', encoding='utf-8'\\)\\)\")",
-      "Bash(pkill -f \"http.server 8802\")"
+      "Bash(pkill -f \"http.server 8802\")",
+      "Bash(pkill -f \"http.server 8803\")"
     ]
   }
 }

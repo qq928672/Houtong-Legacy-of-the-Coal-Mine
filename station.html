@@ -329,10 +329,48 @@
     text-align: center;
   }
 
-  .medal {
-    width: 128px;
-    height: 128px;
+  .medal-wrap {
+    position: relative;
+    width: 150px;
+    height: 150px;
     margin: 0 auto 1.4rem;
+  }
+
+  .medal-glow {
+    position: absolute;
+    inset: -30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,207,107,0.6) 0%, rgba(255,207,107,0) 70%);
+    animation: glowPulse 1s ease-out;
+    pointer-events: none;
+  }
+  @keyframes glowPulse {
+    0% { transform: scale(0.3); opacity: 0; }
+    35% { opacity: 1; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+
+  .medal-particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffcf6b;
+    box-shadow: 0 0 6px 2px #ffcf6b;
+    opacity: 0;
+    animation: particleBurst 0.9s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes particleBurst {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+  }
+
+  .medal {
+    position: absolute;
+    inset: 11px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -345,8 +383,7 @@
   .medal.img-icon {
     background: none;
     box-shadow: none;
-    width: 150px;
-    height: 150px;
+    inset: 0;
   }
   .medal.img-icon img {
     width: 100%;
@@ -356,6 +393,7 @@
   }
   @keyframes pop {
     0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
   }
 
@@ -442,7 +480,10 @@
 
     <!-- Phase 3：獲得信物 -->
     <div class="phase" id="rewardPhase">
-      <div class="medal" id="rewardMedal"></div>
+      <div class="medal-wrap" id="medalWrap">
+        <div class="medal-glow" id="medalGlow"></div>
+        <div class="medal" id="rewardMedal"></div>
+      </div>
       <h2 id="rewardTitle"></h2>
       <p id="rewardDesc"></p>
       <div class="reward-actions">
@@ -467,6 +508,43 @@
     const quizPhase = document.getElementById('quizPhase');
     const rewardPhase = document.getElementById('rewardPhase');
     const notFound = document.getElementById('notFound');
+
+    // ---------- 音效（用 Web Audio API 現場合成，不需要額外音檔） ----------
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playTone(freq, duration, type, gainValue, delay) {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const startTime = ctx.currentTime + (delay || 0);
+        gain.gain.setValueAtTime(gainValue, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      } catch (e) { /* 瀏覽器不支援音訊時靜默略過 */ }
+    }
+    function playCorrectSound() {
+      playTone(880, 0.12, 'sine', 0.18, 0);
+      playTone(1318.5, 0.18, 'sine', 0.15, 0.1);
+    }
+    function playWrongSound() {
+      playTone(180, 0.25, 'sawtooth', 0.12, 0);
+    }
+    function playRewardSound() {
+      playTone(523.25, 0.15, 'sine', 0.16, 0);
+      playTone(659.25, 0.15, 'sine', 0.16, 0.12);
+      playTone(783.99, 0.15, 'sine', 0.16, 0.24);
+      playTone(1046.5, 0.4, 'sine', 0.18, 0.36);
+    }
 
     fetch('stations-data.json')
       .then(r => r.json())
@@ -662,11 +740,13 @@
               btn.classList.add('correct');
               quizFeedback.textContent = '答對了！';
               quizFeedback.className = 'quiz-feedback ok';
+              playCorrectSound();
               onQuizPassed();
             } else {
               btn.classList.add('wrong');
               quizFeedback.textContent = '再試一次';
               quizFeedback.className = 'quiz-feedback no';
+              playWrongSound();
               setTimeout(() => {
                 btn.classList.remove('wrong');
                 allOptions.forEach(o => o.style.pointerEvents = 'auto');
@@ -711,10 +791,12 @@
             confirmBtn.style.pointerEvents = 'none';
             quizFeedback.textContent = '答對了！';
             quizFeedback.className = 'quiz-feedback ok';
+            playCorrectSound();
             onQuizPassed();
           } else {
             quizFeedback.textContent = '再試一次';
             quizFeedback.className = 'quiz-feedback no';
+            playWrongSound();
             setTimeout(() => {
               quizFeedback.textContent = '';
               quizFeedback.className = 'quiz-feedback';
@@ -795,10 +877,12 @@
               quizFeedback.textContent = '答對了！';
               quizFeedback.className = 'quiz-feedback ok';
               confirmBtn.style.pointerEvents = 'none';
+              playCorrectSound();
               onQuizPassed();
             } else {
               quizFeedback.textContent = '順序不對，再試一次';
               quizFeedback.className = 'quiz-feedback no';
+              playWrongSound();
               list.querySelectorAll('.order-item').forEach(el => el.classList.add('flash-wrong'));
               setTimeout(() => {
                 list.querySelectorAll('.order-item').forEach(el => el.classList.remove('flash-wrong'));
@@ -921,10 +1005,12 @@
               quizFeedback.textContent = '答對了！';
               quizFeedback.className = 'quiz-feedback ok';
               confirmBtn.style.pointerEvents = 'none';
+              playCorrectSound();
               onQuizPassed();
             } else {
               quizFeedback.textContent = '配對不太對，再試一次';
               quizFeedback.className = 'quiz-feedback no';
+              playWrongSound();
               list.querySelectorAll('.match-slot').forEach(el => el.classList.add('flash-wrong'));
               setTimeout(() => {
                 list.querySelectorAll('.match-slot').forEach(el => el.classList.remove('flash-wrong'));
@@ -940,6 +1026,25 @@
       }
 
       // ---- 收尾：獲得信物 ----
+      function spawnRewardBurst() {
+        const wrap = document.getElementById('medalWrap');
+        wrap.querySelectorAll('.medal-particle').forEach(p => p.remove());
+
+        const count = 14;
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.4 - 0.2);
+          const dist = 60 + Math.random() * 40;
+          const tx = Math.cos(angle) * dist;
+          const ty = Math.sin(angle) * dist;
+          const p = document.createElement('span');
+          p.className = 'medal-particle';
+          p.style.setProperty('--tx', tx + 'px');
+          p.style.setProperty('--ty', ty + 'px');
+          p.style.animationDelay = (Math.random() * 0.15) + 's';
+          wrap.appendChild(p);
+        }
+      }
+
       function finishStation() {
         localStorage.setItem('token_' + stationId, '1');
         storyPhase.classList.remove('active');
@@ -957,6 +1062,9 @@
         }
         document.getElementById('rewardTitle').textContent = data.reward.title;
         document.getElementById('rewardDesc').textContent = data.reward.desc;
+
+        spawnRewardBurst();
+        playRewardSound();
       }
 
       playBeat(0);
